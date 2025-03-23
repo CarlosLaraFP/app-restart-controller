@@ -13,3 +13,11 @@
 * Add a status field via CRD status subresource
 * Helm chart to deploy the controller
 * Integration tests with envtest
+
+## Tools and Concepts
+
+* kubebuilder: Standard for writing Go controllers
+* client-go + informers: Deepens Kubernetes fluency
+* controller-runtime: Operator SDK / Kubebuilder internals
+* envtest: Testing in controller logic
+* Helm + KinD: Deploy and test controller locally
