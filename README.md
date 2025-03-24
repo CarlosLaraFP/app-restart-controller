@@ -1,7 +1,5 @@
 # AppRestart Kubernetes Controller with Kubebuilder
 
-# 🔁 app-restart-controller
-
 A Kubernetes controller written in Go that watches Deployments labeled `restart: "true"` and triggers a rolling restart by patching their pod template — like an automated `kubectl rollout restart`.
 
 ---
