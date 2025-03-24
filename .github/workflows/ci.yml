@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
@@ -18,13 +18,6 @@ jobs:
       with:
         go-version: '1.24'
 
-    - name: Install KinD
-      run: make kind-install
-
-  test:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
     - name: Unit tests
       run: make test
 
@@ -32,6 +25,12 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Install KinD
+      run: make kind-install
+
     - name: Create KinD Cluster -> Build Docker image -> Load image into KinD -> Helm install custom controller
       run: make deploy
 
