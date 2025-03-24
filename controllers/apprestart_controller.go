@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"context"
-	"fmt"
+	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -34,8 +34,11 @@ func (r *AppRestartReconciler) Reconcile(ctx context.Context, req reconcile.Requ
 		if annotations == nil {
 			annotations = make(map[string]string)
 		}
-		annotations["kubectl.kubernetes.io/restartedAt"] = fmt.Sprintf("%v", ctx.Value("now"))
+		annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().Local().Format(time.RFC3339)
 		deploy.Spec.Template.Annotations = annotations
+
+		// Remove the restart label to avoid infinite restart loop
+		delete(deploy.Labels, "restart")
 
 		if err := r.Update(ctx, &deploy); err != nil {
 			logger.Error(err, "Failed to update deployment")
@@ -49,7 +52,7 @@ func (r *AppRestartReconciler) Reconcile(ctx context.Context, req reconcile.Requ
 func SetupWithManager(mgr manager.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&appsv1.Deployment{}).
-		WithOptions(controller.Options{MaxConcurrentReconciles: 1}).
+		WithOptions(controller.Options{MaxConcurrentReconciles: 1}). // the controller has 1 goroutine actively processing Deployment events
 		Complete(&AppRestartReconciler{
 			Client: mgr.GetClient(),
 		})

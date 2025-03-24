@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: restart-me
+  labels:
+    app: restart-me
+    restart: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: restart-me
+  template:
+    metadata:
+      labels:
+        app: restart-me
+    spec:
+      containers:
+        - name: nginx
+          image: nginx
+          ports:
+            - containerPort: 80
