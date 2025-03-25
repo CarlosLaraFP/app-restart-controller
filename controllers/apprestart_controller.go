@@ -1,8 +1,8 @@
 package controllers
 
 import (
+	"app-restart-controller/internal"
 	"context"
-	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -42,29 +42,17 @@ func (r *AppRestartReconciler) Reconcile(ctx context.Context, req reconcile.Requ
 			return client.IgnoreNotFound(err)
 		}
 
-		// TODO: Modularize & unit test
 		for _, deployment := range deployments.Items {
-			for _, c := range deployment.Spec.Template.Spec.Containers {
-				for _, envFrom := range c.EnvFrom {
-					if envFrom.ConfigMapRef != nil && envFrom.ConfigMapRef.Name == cm.Name {
-						logger.Info("ConfigMap detected", "Deployment", deployment.Name)
-						// Add dummy annotation to trigger rollout
-						annotations := deployment.Spec.Template.Annotations
-						if annotations == nil {
-							annotations = make(map[string]string)
-						}
-						annotations["kubectl.kubernetes.io/restartedAt"] = time.Now().Local().Format(time.RFC3339)
-						deployment.Spec.Template.Annotations = annotations
+			if internal.DeploymentReferencesConfigMap(&deployment, cm.Name) {
+				logger.Info("ConfigMap detected", "Deployment", deployment.Name)
 
-						if err := r.Update(ctx, &deployment); err != nil {
-							logger.Error(err, "Failed to update deployment", "Name", deployment.Name)
-							return err
-						}
-
-						logger.Info("Deployment updated successfully", "Name", req.NamespacedName)
-						RestartedDeployments.Inc()
-					}
+				if err := r.Update(ctx, &deployment); err != nil {
+					logger.Error(err, "Failed to update deployment", "Name", deployment.Name)
+					return err
 				}
+
+				logger.Info("Deployment updated successfully", "Name", req.NamespacedName)
+				RestartedDeployments.Inc()
 			}
 		}
 
