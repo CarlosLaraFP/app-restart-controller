@@ -32,6 +32,11 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
+	// Sets up:
+	// a shared cache (for event-driven watches)
+	// a client (for CRUD)
+	// scheme (object types)
+	// metrics and health endpoints
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
 		MetricsBindAddress: metricsAddr, // starts an HTTP server exposing Prometheus metrics at /metrics on port 8080
@@ -50,6 +55,18 @@ func main() {
 	}
 
 	setupLog.Info("starting manager")
+
+	// The manager initializes a shared informer cache that watches the API server for changes to the resources being watched (e.g. via a watch stream).
+	// These events (add/update/delete) are pushed into a rate-limited queue per controller.
+	// The controller’s Reconcile() is then called with the object key (namespace/name), and uses the Client (which reads from the cache) to get the actual resource state.
+	// Events = via watch → enqueue reconcile.Request
+	// Object data = read from cache (backed by API server)
+	// The shared informer cache is a local, in-memory store of Kubernetes resources.
+	// It’s populated and kept up-to-date by watching the API server using List + Watch. It exists to:
+	// Avoid hammering the API server for every single read
+	// Allow fast, consistent access to objects during Reconcile
+	// Provide event notifications (add/update/delete) for controllers
+	// In controller-runtime, it’s abstracted as cache.Cache, but under the hood it uses client-go's SharedInformers
 
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")

@@ -11,7 +11,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -60,7 +59,8 @@ func (r *AppRestartReconciler) Reconcile(ctx context.Context, req reconcile.Requ
 	})
 }
 
-func SetupWithManager(mgr manager.Manager) error {
+func SetupWithManager(mgr ctrl.Manager) error {
+	// The developer configures the controller with the manager, and the manager manages its lifecycle.
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.ConfigMap{}).
 		WithOptions(controller.Options{MaxConcurrentReconciles: 1}). // the controller has 1 goroutine actively processing Deployment events
