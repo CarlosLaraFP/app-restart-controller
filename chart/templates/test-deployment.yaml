@@ -18,5 +18,10 @@ spec:
       containers:
         - name: nginx
           image: nginx
+          {{- if .Values.config.include }}
+          envFrom:
+          - configMapRef:
+              name: {{ .Values.config.name }}
+          {{- end }}
           ports:
             - containerPort: 80

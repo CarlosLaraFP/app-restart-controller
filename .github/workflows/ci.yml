@@ -34,8 +34,8 @@ jobs:
     - name: Create KinD Cluster -> Build Docker image -> Load image into KinD -> Helm install custom controller
       run: make deploy
 
-    - name: Apply test deployment
-      run: make apply-test-deployment
+    - name: Log resources
+      run: make log
 
     - name: Cleanup
       if: always()

@@ -43,6 +43,6 @@ These solve 403 Forbidden errors like: "User system:serviceaccount:default:app-r
 
 ```bash
 make deploy
-make apply-test-deployment
+make log
 make destroy
 

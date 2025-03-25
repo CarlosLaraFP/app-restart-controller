@@ -28,10 +28,9 @@ kind-load:
 helm-install:
 	helm upgrade --install $(APP_NAME) ./chart --namespace controllers --create-namespace
 
-apply-test-deployment:
-	kubectl apply -f manifests/test-deployment.yaml
-	sleep 10
+log:
 	kubectl describe deployment restart-me -n default
+	kubectl get configmap my-config -o yaml
 
 helm-uninstall:
 	helm uninstall $(APP_NAME) --namespace controllers
