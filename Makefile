@@ -29,8 +29,12 @@ helm-install:
 	helm upgrade --install $(APP_NAME) ./chart --namespace controllers --create-namespace
 
 log:
-	kubectl describe deployment restart-me -n default
-	kubectl get configmap my-config -o yaml
+	sleep 10
+	kubectl describe deployment restart-me -n controllers
+	kubectl get configmap my-config -o yaml -n controllers
+
+patch-config:
+	kubectl patch configmap my-config -p '{"data":{"provider":"aws"}}' -n controllers
 
 helm-uninstall:
 	helm uninstall $(APP_NAME) --namespace controllers
