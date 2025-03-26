@@ -14,10 +14,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func TestReconcile_RestartsDeploymentWithEnvFromConfigMap(t *testing.T) {
-	_ = appsv1.AddToScheme(scheme.Scheme)
-	_ = corev1.AddToScheme(scheme.Scheme)
+var (
+	_   = appsv1.AddToScheme(scheme.Scheme)
+	_   = corev1.AddToScheme(scheme.Scheme)
+	ctx = context.TODO()
+)
 
+func TestReconcile_RestartsDeploymentWithEnvFromConfigMap(t *testing.T) {
 	cm := &corev1.ConfigMap{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "my-config",
@@ -54,29 +57,31 @@ func TestReconcile_RestartsDeploymentWithEnvFromConfigMap(t *testing.T) {
 		},
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(cm, deploy).Build()
+	client := fake.
+		NewClientBuilder().
+		WithScheme(scheme.Scheme).
+		WithObjects(cm, deploy).
+		Build()
+
 	r := &AppRestartReconciler{Client: client}
 
-	_, err := r.Reconcile(context.TODO(), ctrl.Request{NamespacedName: kclient.ObjectKeyFromObject(cm)})
+	_, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: kclient.ObjectKeyFromObject(cm)})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
 
 	var updated appsv1.Deployment
-	err = client.Get(context.TODO(), kclient.ObjectKeyFromObject(deploy), &updated)
+	err = client.Get(ctx, kclient.ObjectKeyFromObject(deploy), &updated)
 	if err != nil {
 		t.Fatalf("failed to get updated deployment: %v", err)
 	}
 
-	if val := updated.Spec.Template.Annotations["kubectl.kubernetes.io/restartedAt"]; val == "" {
+	if _, ok := updated.Spec.Template.Annotations["kubectl.kubernetes.io/restartedAt"]; !ok {
 		t.Errorf("expected restartedAt annotation, but got none")
 	}
 }
 
 func TestReconcile_IgnoresDeploymentsWithoutEnvFrom(t *testing.T) {
-	_ = appsv1.AddToScheme(scheme.Scheme)
-	_ = corev1.AddToScheme(scheme.Scheme)
-
 	cm := &corev1.ConfigMap{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "unused-config",
@@ -108,16 +113,21 @@ func TestReconcile_IgnoresDeploymentsWithoutEnvFrom(t *testing.T) {
 		},
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(cm, deploy).Build()
+	client := fake.
+		NewClientBuilder().
+		WithScheme(scheme.Scheme).
+		WithObjects(cm, deploy).
+		Build()
+
 	r := &AppRestartReconciler{Client: client}
 
-	_, err := r.Reconcile(context.TODO(), ctrl.Request{NamespacedName: kclient.ObjectKeyFromObject(cm)})
+	_, err := r.Reconcile(ctx, ctrl.Request{NamespacedName: kclient.ObjectKeyFromObject(cm)})
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
 
 	var updated appsv1.Deployment
-	_ = client.Get(context.TODO(), kclient.ObjectKeyFromObject(deploy), &updated)
+	_ = client.Get(ctx, kclient.ObjectKeyFromObject(deploy), &updated)
 
 	if updated.Spec.Template.Annotations != nil {
 		t.Errorf("expected no annotation, got: %v", updated.Spec.Template.Annotations)
@@ -125,11 +135,6 @@ func TestReconcile_IgnoresDeploymentsWithoutEnvFrom(t *testing.T) {
 }
 
 func TestReconcile_HandlesConflictDuringUpdate(t *testing.T) {
-	_ = appsv1.AddToScheme(scheme.Scheme)
-	_ = corev1.AddToScheme(scheme.Scheme)
-
-	ctx := context.TODO()
-
 	cm := &corev1.ConfigMap{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "conflict-cm",
@@ -163,10 +168,15 @@ func TestReconcile_HandlesConflictDuringUpdate(t *testing.T) {
 		},
 	}
 
-	client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(cm, deploy).Build()
+	client := fake.
+		NewClientBuilder().
+		WithScheme(scheme.Scheme).
+		WithObjects(cm, deploy).
+		Build()
+
 	r := &AppRestartReconciler{Client: client}
 
-	// Simulate external mutation
+	// Simulate external mutation with goroutine closure
 	go func() {
 		time.Sleep(10 * time.Millisecond)
 		var temp appsv1.Deployment
@@ -183,7 +193,7 @@ func TestReconcile_HandlesConflictDuringUpdate(t *testing.T) {
 	var updated appsv1.Deployment
 	_ = client.Get(ctx, kclient.ObjectKeyFromObject(deploy), &updated)
 
-	if updated.Spec.Template.Annotations["kubectl.kubernetes.io/restartedAt"] == "" {
-		t.Errorf("expected restartedAt annotation after retry")
+	if _, ok := updated.Spec.Template.Annotations["kubectl.kubernetes.io/restartedAt"]; !ok {
+		t.Errorf("expected restartedAt annotation after reconcile retry")
 	}
 }
