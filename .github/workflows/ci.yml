@@ -1,4 +1,4 @@
-name: Kubebuilder custom controller CI
+name: CI
 
 on:
   push:
