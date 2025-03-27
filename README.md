@@ -1,5 +1,7 @@
 # AppRestart Kubernetes Controller with Kubebuilder
 
+[![CI](https://github.com/CarlosLaraFP/app-restart-controller/actions/workflows/ci.yml/badge.svg)](https://github.com/CarlosLaraFP/app-restart-controller/actions)
+
 A Kubernetes controller written in Go that watches ConfigMap resources and triggers a rolling restart of Deployment resources by patching their pod template — like an automated `kubectl rollout restart`.
 
 ---
